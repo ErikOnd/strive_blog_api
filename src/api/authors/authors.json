@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Erik",
+    "surname": "My surname",
+    "email": "123.hh@gail.com",
+    "dataOfBirth": "12.02.2000",
+    "avatar": "https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png",
+    "createdAt": "2023-02-28T14:36:39.228Z",
+    "updatedAt": "2023-02-28T15:30:05.564Z",
+    "id": "1d6xdjhwleocqxtp"
+  },
+  {
+    "name": "A new Author12",
+    "surname": "My surname12",
+    "email": "123.hh@gail.com",
+    "dataOfBirth": "12.02.2000",
+    "avatar": "https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png",
+    "createdAt": "2023-02-28T15:25:03.256Z",
+    "updatedAt": "2023-02-28T15:28:34.208Z",
+    "id": "1d6xdlt3leoeh6l5"
+  },
+  {
+    "name": "It's me",
+    "surname": "My surname12",
+    "email": "123.hh@gail.com",
+    "dataOfBirth": "12.02.2000",
+    "avatar": "https://png.pngtree.com/png-vector/20220709/ourmid/pngtree-businessman-user-avatar-wearing-suit-with-red-tie-png-image_5809521.png",
+    "createdAt": "2023-02-28T15:33:33.517Z",
+    "updatedAt": "2023-02-28T15:33:33.517Z",
+    "id": "1d6xdm9lleoes4b2"
+  }
+]
