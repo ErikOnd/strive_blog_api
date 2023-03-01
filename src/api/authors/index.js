@@ -11,6 +11,8 @@ const authorsJSONPATH = join(
   "authors.json"
 );
 
+const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPATH));
+
 authorsRouter.post("/", (request, response) => {
   const newAuthor = {
     ...request.body,
@@ -18,7 +20,7 @@ authorsRouter.post("/", (request, response) => {
     updatedAt: new Date(),
     id: uniqid(),
   };
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPATH));
+
   const found = authorsArray.find(
     (author) => author.email === request.body.email
   );
@@ -32,19 +34,15 @@ authorsRouter.post("/", (request, response) => {
 });
 
 authorsRouter.get("/", (request, response) => {
-  const fileContentAsBuffer = fs.readFileSync(authorsJSONPATH);
-  const authorsArray = JSON.parse(fileContentAsBuffer);
   response.send(authorsArray);
 });
 
 authorsRouter.get("/:id", (request, response) => {
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPATH));
   const author = authorsArray.find((author) => author.id === request.params.id);
   response.send(author);
 });
 
 authorsRouter.put("/:id", (request, response) => {
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPATH));
   const index = authorsArray.findIndex(
     (author) => author.id === request.params.id
   );
@@ -56,7 +54,6 @@ authorsRouter.put("/:id", (request, response) => {
 });
 
 authorsRouter.delete("/:id", (request, response) => {
-  const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPATH));
   const remainingAuthors = authorsArray.filter(
     (author) => author.id !== request.params.id
   );
