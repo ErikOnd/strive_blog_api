@@ -1,43 +1,46 @@
 import Express from "express";
-import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import uniqid from "uniqid";
 import createHttpError from "http-errors";
 import { checkBlogPostSchema, triggerBadRequest } from "./validation.js";
+import { getBlogPosts, writeBlogPosts } from "../../lib/fs-tools.js";
 
 const blogPostsRouter = Express.Router();
-
-const blogPostsJSONPATH = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "blogPosts.json"
-);
-
-const blogPostsArray = JSON.parse(fs.readFileSync(blogPostsJSONPATH));
 
 blogPostsRouter.post(
   "/",
   checkBlogPostSchema,
   triggerBadRequest,
-  (request, response) => {
-    const newBlogPost = {
-      ...request.body,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      id: uniqid(),
-    };
-    blogPostsArray.push(newBlogPost);
-    fs.writeFileSync(blogPostsJSONPATH, JSON.stringify(blogPostsArray));
-    response.status(201).send({ id: newBlogPost.id });
+  async (request, response) => {
+    try {
+      const newBlogPost = {
+        ...request.body,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        id: uniqid(),
+      };
+      const blogPostsArray = await getBlogPosts();
+      blogPostsArray.push(newBlogPost);
+      await writeBlogPosts(blogPostsArray);
+
+      response.status(201).send({ id: newBlogPost.id });
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
-blogPostsRouter.get("/", (request, response) => {
-  response.send(blogPostsArray);
+blogPostsRouter.get("/", async (request, response) => {
+  try {
+    const blogPosts = await getBlogPosts();
+    response.send(blogPosts);
+  } catch (error) {
+    next(error);
+  }
 });
 
-blogPostsRouter.get("/:id", (request, response, next) => {
+blogPostsRouter.get("/:id", async (request, response, next) => {
   try {
+    const blogPostsArray = await getBlogPosts();
     const blogPost = blogPostsArray.find(
       (blogPost) => blogPost.id === request.params.id
     );
@@ -56,8 +59,9 @@ blogPostsRouter.get("/:id", (request, response, next) => {
   }
 });
 
-blogPostsRouter.put("/:id", (request, response, next) => {
+blogPostsRouter.put("/:id", async (request, response, next) => {
   try {
+    const blogPostsArray = await getBlogPosts();
     const index = blogPostsArray.findIndex(
       (blogPost) => blogPost.id === request.params.id
     );
@@ -69,7 +73,7 @@ blogPostsRouter.put("/:id", (request, response, next) => {
         updatedAt: new Date(),
       };
       blogPostsArray[index] = updatedUser;
-      fs.writeFileSync(blogPostsJSONPATH, JSON.stringify(blogPostsArray));
+      await writeBlogPosts(blogPostsArray);
       response.send(updatedUser);
     } else {
       next(
@@ -77,21 +81,22 @@ blogPostsRouter.put("/:id", (request, response, next) => {
           404,
           `Blog post with id ${request.params.id} not found!`
         )
-      ); //
+      );
     }
   } catch (error) {
     next(error);
   }
 });
 
-blogPostsRouter.delete("/:id", (request, response, next) => {
+blogPostsRouter.delete("/:id", async (request, response, next) => {
   try {
+    const blogPostsArray = await getBlogPosts();
     const remainingblogPosts = blogPostsArray.filter(
       (blogPost) => blogPost.id !== request.params.id
     );
 
     if (remainingblogPosts.length !== blogPostsArray.length) {
-      fs.writeFileSync(blogPostsJSONPATH, JSON.stringify(remainingblogPosts));
+      writeBlogPosts(remainingblogPosts);
       response.status(204).send();
     } else {
       next(

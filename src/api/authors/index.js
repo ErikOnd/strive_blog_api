@@ -1,64 +1,87 @@
 import Express from "express";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import uniqid from "uniqid";
+import { getAuthors, writeAuthors } from "../../lib/fs-tools.js";
 
 const authorsRouter = Express.Router();
 
-const authorsJSONPATH = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "authors.json"
-);
+authorsRouter.post("/", async (request, response) => {
+  try {
+    const newAuthor = {
+      ...request.body,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      id: uniqid(),
+    };
+    const authorsArray = await getAuthors();
 
-const authorsArray = JSON.parse(fs.readFileSync(authorsJSONPATH));
-
-authorsRouter.post("/", (request, response) => {
-  const newAuthor = {
-    ...request.body,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    id: uniqid(),
-  };
-
-  const found = authorsArray.find(
-    (author) => author.email === request.body.email
-  );
-  if (found === undefined) {
-    authorsArray.push(newAuthor);
-    fs.writeFileSync(authorsJSONPATH, JSON.stringify(authorsArray));
-    response.status(201).send({ id: newAuthor.id });
-  } else {
-    response.status(400).send("User with that email already exists");
+    const found = authorsArray.find(
+      (author) => author.email === request.body.email
+    );
+    if (found === undefined) {
+      authorsArray.push(newAuthor);
+      await writeAuthors(authorsArray);
+      response.status(201).send({ id: newAuthor.id });
+    } else {
+      response.status(400).send("User with that email already exists");
+    }
+  } catch (error) {
+    next(error);
   }
 });
 
-authorsRouter.get("/", (request, response) => {
-  response.send(authorsArray);
+authorsRouter.get("/", async (request, response) => {
+  try {
+    const authorsArray = await getAuthors();
+    response.send(authorsArray);
+  } catch (error) {
+    next(error);
+  }
 });
 
-authorsRouter.get("/:id", (request, response) => {
-  const author = authorsArray.find((author) => author.id === request.params.id);
-  response.send(author);
+authorsRouter.get("/:id", async (request, response) => {
+  try {
+    const authorsArray = await getAuthors();
+    const author = authorsArray.find(
+      (author) => author.id === request.params.id
+    );
+    response.send(author);
+  } catch (error) {
+    next(error);
+  }
 });
 
-authorsRouter.put("/:id", (request, response) => {
-  const index = authorsArray.findIndex(
-    (author) => author.id === request.params.id
-  );
-  const oldAuthor = authorsArray[index];
-  const updatedUser = { ...oldAuthor, ...request.body, updatedAt: new Date() };
-  authorsArray[index] = updatedUser;
-  fs.writeFileSync(authorsJSONPATH, JSON.stringify(authorsArray));
-  response.send(updatedUser);
+authorsRouter.put("/:id", async (request, response) => {
+  try {
+    const authorsArray = await getAuthors();
+    const index = authorsArray.findIndex(
+      (author) => author.id === request.params.id
+    );
+    const oldAuthor = authorsArray[index];
+    const updatedUser = {
+      ...oldAuthor,
+      ...request.body,
+      updatedAt: new Date(),
+    };
+    authorsArray[index] = updatedUser;
+    await writeAuthors(authorsArray);
+    response.send(updatedUser);
+  } catch (error) {
+    next(error);
+  }
 });
 
-authorsRouter.delete("/:id", (request, response) => {
-  const remainingAuthors = authorsArray.filter(
-    (author) => author.id !== request.params.id
-  );
-  fs.writeFileSync(authorsJSONPATH, JSON.stringify(remainingAuthors));
-  response.status(204).send();
+authorsRouter.delete("/:id", async (request, response) => {
+  try {
+    const authorsArray = await getAuthors();
+    const remainingAuthors = authorsArray.filter(
+      (author) => author.id !== request.params.id
+    );
+    await writeAuthors(remainingAuthors);
+    response.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default authorsRouter;
