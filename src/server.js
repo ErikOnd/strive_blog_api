@@ -14,14 +14,12 @@ import {
 
 const server = Express();
 const port = process.env.PORT;
-const publicFolderPath = join(process.cwd(), "./public");
 
 console.log(process.env.MONGO_URL);
 console.log(process.env.SECRET);
 
 const whitelist = [process.env.FE_DEV_URL, process.env.FE_PROD_URL];
 
-server.use(Express.static(publicFolderPath));
 server.use(
   cors({
     origin: (currentOrigin, corsNext) => {
