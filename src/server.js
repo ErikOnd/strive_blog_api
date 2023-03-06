@@ -15,8 +15,7 @@ import {
 const server = Express();
 const port = process.env.PORT;
 
-console.log(process.env.MONGO_URL);
-console.log(process.env.SECRET);
+console.log(process.env.PORT);
 
 const whitelist = [process.env.FE_DEV_URL, process.env.FE_PROD_URL];
 
