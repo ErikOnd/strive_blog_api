@@ -5,7 +5,7 @@ import { getAuthors, writeAuthors } from "../../lib/fs-tools.js";
 
 const authorsRouter = Express.Router();
 
-authorsRouter.post("/", async (request, response) => {
+authorsRouter.post("/", async (request, response, next) => {
   try {
     const newAuthor = {
       ...request.body,
@@ -30,7 +30,7 @@ authorsRouter.post("/", async (request, response) => {
   }
 });
 
-authorsRouter.get("/", async (request, response) => {
+authorsRouter.get("/", async (request, response, next) => {
   try {
     const authorsArray = await getAuthors();
     response.send(authorsArray);
@@ -39,7 +39,7 @@ authorsRouter.get("/", async (request, response) => {
   }
 });
 
-authorsRouter.get("/:id", async (request, response) => {
+authorsRouter.get("/:id", async (request, response, next) => {
   try {
     const authorsArray = await getAuthors();
     const author = authorsArray.find(
@@ -51,7 +51,7 @@ authorsRouter.get("/:id", async (request, response) => {
   }
 });
 
-authorsRouter.put("/:id", async (request, response) => {
+authorsRouter.put("/:id", async (request, response, next) => {
   try {
     const authorsArray = await getAuthors();
     const index = authorsArray.findIndex(
@@ -71,7 +71,7 @@ authorsRouter.put("/:id", async (request, response) => {
   }
 });
 
-authorsRouter.delete("/:id", async (request, response) => {
+authorsRouter.delete("/:id", async (request, response, next) => {
   try {
     const authorsArray = await getAuthors();
     const remainingAuthors = authorsArray.filter(

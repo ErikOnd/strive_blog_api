@@ -10,7 +10,7 @@ blogPostsRouter.post(
   "/",
   checkBlogPostSchema,
   triggerBadRequest,
-  async (request, response) => {
+  async (request, response, next) => {
     try {
       const newBlogPost = {
         ...request.body,
@@ -29,7 +29,7 @@ blogPostsRouter.post(
   }
 );
 
-blogPostsRouter.get("/", async (request, response) => {
+blogPostsRouter.get("/", async (request, response, next) => {
   try {
     const blogPosts = await getBlogPosts();
     response.send(blogPosts);
