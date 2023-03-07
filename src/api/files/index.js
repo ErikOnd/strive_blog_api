@@ -9,6 +9,8 @@ import {
 import createHttpError from "http-errors";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { getPDFReadableStream } from "../../lib/pdf-tools.js";
+import { pipeline } from "stream";
 
 const cloudinaryUploader = multer({
   storage: new CloudinaryStorage({
@@ -47,6 +49,25 @@ filesRouter.put("/:id", cloudinaryUploader, async (req, res, next) => {
     } else {
       next(createHttpError(404, `The uploaded image is undefined`));
     }
+  } catch (error) {
+    next(error);
+  }
+});
+
+filesRouter.get("/pdf/:id", async (req, res, next) => {
+  try {
+    res.setHeader("Content-Disposition", "attachment; filename=blogPost.pdf");
+
+    const blogPosts = await getBlogPosts();
+    const blogPost = blogPosts.find(
+      (blogPost) => blogPost.id === req.params.id
+    );
+    const source = getPDFReadableStream(blogPost);
+    const destination = res;
+
+    pipeline(source, destination, (err) => {
+      if (err) console.log(err);
+    });
   } catch (error) {
     next(error);
   }
