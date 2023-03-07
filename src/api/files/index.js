@@ -7,10 +7,18 @@ import {
   writeBlogPosts,
 } from "../../lib/fs-tools.js";
 import createHttpError from "http-errors";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+
+const cloudinaryUploader = multer({
+  storage: new CloudinaryStorage({
+    cloudinary,
+  }),
+}).single("cover");
 
 const filesRouter = Express.Router();
 
-filesRouter.put("/:id", multer().single("cover"), async (req, res, next) => {
+filesRouter.put("/:id", cloudinaryUploader, async (req, res, next) => {
   try {
     console.log(req.file);
     if (req.file !== undefined) {

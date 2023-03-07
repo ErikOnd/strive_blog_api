@@ -14,6 +14,7 @@ import {
 
 const server = Express();
 const port = process.env.PORT;
+const publicFolderPath = join(process.cwd(), "./public");
 
 console.log(process.env.PORT);
 
@@ -36,6 +37,8 @@ server.use(
   })
 );
 
+server.use(Express.static(publicFolderPath));
+server.use(cors());
 server.use(Express.json());
 
 server.use("/authors", authorsRouter);
