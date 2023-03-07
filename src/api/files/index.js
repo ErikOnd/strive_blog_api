@@ -13,6 +13,9 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 const cloudinaryUploader = multer({
   storage: new CloudinaryStorage({
     cloudinary,
+    params: {
+      folder: "strive-blog/covers",
+    },
   }),
 }).single("cover");
 
