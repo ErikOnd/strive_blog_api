@@ -22,12 +22,12 @@ const cloudinaryUploader = multer({
 const filesRouter = Express.Router();
 
 filesRouter.put("/:id", cloudinaryUploader, async (req, res, next) => {
+  console.log("TESTING FILE ROUTER:", req.file);
   try {
-    console.log(req.file);
+    /*   console.log("IMG INFO:", req.file); */
     if (req.file !== undefined) {
       const originalFileExtension = extname(req.file.originalname);
       const fileName = req.params.id + originalFileExtension;
-      await saveBlogPostsCover(fileName, req.file.buffer);
       const blogPostList = await getBlogPosts();
       const index = blogPostList.findIndex(
         (blogPost) => blogPost.id === req.params.id
@@ -37,7 +37,7 @@ filesRouter.put("/:id", cloudinaryUploader, async (req, res, next) => {
         const oldBlogPost = blogPostList[index];
         const updatedBlogPost = {
           ...oldBlogPost,
-          cover: "http://localhost:3001/img/blogPosts/" + fileName,
+          cover: req.file.path,
           updatedAt: new Date(),
         };
         blogPostList[index] = updatedBlogPost;
