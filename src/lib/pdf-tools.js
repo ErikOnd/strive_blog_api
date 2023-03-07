@@ -11,8 +11,12 @@ export const getPDFReadableStream = async (blogPost) => {
     },
   };
   const printer = new PdfPrinter(fonts);
-
+  console.log("img url", blogPost.cover);
   const encodedImg = await imageToBase64(blogPost.cover);
+
+  const str = blogPost.cover;
+  const parts = str.split(".");
+  const imgType = parts.pop();
 
   const docDefinition = {
     content: [
