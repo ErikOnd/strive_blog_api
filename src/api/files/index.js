@@ -62,7 +62,7 @@ filesRouter.get("/pdf/:id", async (req, res, next) => {
     const blogPost = blogPosts.find(
       (blogPost) => blogPost.id === req.params.id
     );
-    const source = getPDFReadableStream(blogPost);
+    const source = await getPDFReadableStream(blogPost);
     const destination = res;
 
     pipeline(source, destination, (err) => {

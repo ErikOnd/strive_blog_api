@@ -1,6 +1,7 @@
 import PdfPrinter from "pdfmake";
+import imageToBase64 from "image-to-base64";
 
-export const getPDFReadableStream = (blogPost) => {
+export const getPDFReadableStream = async (blogPost) => {
   const fonts = {
     Helvetica: {
       normal: "Helvetica",
@@ -11,6 +12,8 @@ export const getPDFReadableStream = (blogPost) => {
   };
   const printer = new PdfPrinter(fonts);
 
+  const encodedImg = await imageToBase64(blogPost.cover);
+
   const docDefinition = {
     content: [
       {
@@ -20,6 +23,10 @@ export const getPDFReadableStream = (blogPost) => {
       {
         text: blogPost.category,
         style: "subheader",
+      },
+      {
+        image: `data:image/jpeg;base64, ${encodedImg}`,
+        width: 150,
       },
       blogPost.content,
     ],
