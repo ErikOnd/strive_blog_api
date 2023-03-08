@@ -36,7 +36,7 @@ commentsRouter.get(
     try {
       const commentsArray = await getComments();
       console.log("commentsArray:", commentsArray);
-      const blogComments = commentsArray.find(
+      const blogComments = commentsArray.filter(
         (comment) => comment.blogPostId === request.params.blogPostId
       );
       console.log("blogComments:", blogComments);
