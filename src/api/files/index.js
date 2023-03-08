@@ -24,7 +24,6 @@ const cloudinaryUploader = multer({
 const filesRouter = Express.Router();
 
 filesRouter.put("/:id", cloudinaryUploader, async (req, res, next) => {
-  console.log("TESTING FILE ROUTER:", req.file);
   try {
     /*   console.log("IMG INFO:", req.file); */
     if (req.file !== undefined) {
@@ -49,25 +48,6 @@ filesRouter.put("/:id", cloudinaryUploader, async (req, res, next) => {
     } else {
       next(createHttpError(404, `The uploaded image is undefined`));
     }
-  } catch (error) {
-    next(error);
-  }
-});
-
-filesRouter.get("/pdf/:id", async (req, res, next) => {
-  try {
-    res.setHeader("Content-Disposition", "attachment; filename=blogPost.pdf");
-
-    const blogPosts = await getBlogPosts();
-    const blogPost = blogPosts.find(
-      (blogPost) => blogPost.id === req.params.id
-    );
-    const source = await getPDFReadableStream(blogPost);
-    const destination = res;
-
-    pipeline(source, destination, (err) => {
-      if (err) console.log(err);
-    });
   } catch (error) {
     next(error);
   }
