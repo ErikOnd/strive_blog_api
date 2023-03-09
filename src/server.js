@@ -40,7 +40,6 @@ server.use(
 );
 
 server.use(Express.static(publicFolderPath));
-server.use(cors());
 server.use(Express.json());
 
 server.use("/authors", authorsRouter);
