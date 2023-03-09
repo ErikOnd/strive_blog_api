@@ -1,7 +1,7 @@
 import Express from "express";
-import fs from "fs";
 import uniqid from "uniqid";
 import { getAuthors, writeAuthors } from "../../lib/fs-tools.js";
+import { sendsRegistrationEmail } from "../../lib/email-tools.js";
 
 const authorsRouter = Express.Router();
 
@@ -79,6 +79,17 @@ authorsRouter.delete("/:id", async (request, response, next) => {
     );
     await writeAuthors(remainingAuthors);
     response.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+authorsRouter.post("/sendMail", async (req, res, next) => {
+  try {
+    console.log("sendMail");
+    const email = req.body.email;
+    await sendsRegistrationEmail(email);
+    res.send();
   } catch (error) {
     next(error);
   }

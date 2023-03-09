@@ -46,7 +46,7 @@ server.use(Express.json());
 server.use("/authors", authorsRouter);
 server.use("/blogPosts", blogPostsRouter);
 server.use("/comments", commentsRouter);
-server.use("/uploadCover", filesRouter);
+server.use("/file", filesRouter);
 server.use("/blogPosts", pdfDownloadRouter);
 
 server.use(badRequestHandler);
