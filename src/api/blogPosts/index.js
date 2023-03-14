@@ -1,8 +1,7 @@
 import Express from "express";
-import uniqid from "uniqid";
 import createHttpError from "http-errors";
 import { checkBlogPostSchema, triggerBadRequest } from "./validation.js";
-import { getBlogPosts, writeBlogPosts } from "../../lib/fs-tools.js";
+import BlogPostModel from "./blogPostModel.js";
 
 const blogPostsRouter = Express.Router();
 
@@ -12,17 +11,11 @@ blogPostsRouter.post(
   triggerBadRequest,
   async (request, response, next) => {
     try {
-      const newBlogPost = {
-        ...request.body,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        id: uniqid(),
-      };
-      const blogPostsArray = await getBlogPosts();
-      blogPostsArray.push(newBlogPost);
-      await writeBlogPosts(blogPostsArray);
+      const newBlogPost = new BlogPostModel(request.body);
 
-      response.status(201).send({ id: newBlogPost.id });
+      const { _id } = await newBlogPost.save();
+
+      response.status(201).send({ _id });
     } catch (error) {
       next(error);
     }
@@ -31,7 +24,7 @@ blogPostsRouter.post(
 
 blogPostsRouter.get("/", async (request, response, next) => {
   try {
-    const blogPosts = await getBlogPosts();
+    const blogPosts = await BlogPostModel.find();
     response.send(blogPosts);
   } catch (error) {
     next(error);
@@ -40,10 +33,7 @@ blogPostsRouter.get("/", async (request, response, next) => {
 
 blogPostsRouter.get("/:id", async (request, response, next) => {
   try {
-    const blogPostsArray = await getBlogPosts();
-    const blogPost = blogPostsArray.find(
-      (blogPost) => blogPost.id === request.params.id
-    );
+    const blogPost = await BlogPostModel.findById(request.params.id);
     if (blogPost) {
       response.send(blogPost);
     } else {
@@ -61,20 +51,15 @@ blogPostsRouter.get("/:id", async (request, response, next) => {
 
 blogPostsRouter.put("/:id", async (request, response, next) => {
   try {
-    const blogPostsArray = await getBlogPosts();
-    const index = blogPostsArray.findIndex(
-      (blogPost) => blogPost.id === request.params.id
+    const updatedBlogPost = await BlogPostModel.findByIdAndUpdate(
+      request.params.id,
+      request.body,
+      { new: true, runValidators: true }
     );
-    if (index !== -1) {
-      const oldBlogPost = blogPostsArray[index];
-      const updatedUser = {
-        ...oldBlogPost,
-        ...request.body,
-        updatedAt: new Date(),
-      };
-      blogPostsArray[index] = updatedUser;
-      await writeBlogPosts(blogPostsArray);
-      response.send(updatedUser);
+    console.log("updatedBlogPost", updatedBlogPost);
+
+    if (updatedBlogPost) {
+      response.send(updatedBlogPost);
     } else {
       next(
         createHttpError(
@@ -90,13 +75,11 @@ blogPostsRouter.put("/:id", async (request, response, next) => {
 
 blogPostsRouter.delete("/:id", async (request, response, next) => {
   try {
-    const blogPostsArray = await getBlogPosts();
-    const remainingblogPosts = blogPostsArray.filter(
-      (blogPost) => blogPost.id !== request.params.id
+    const deletedBlogPost = await BlogPostModel.findByIdAndDelete(
+      request.params.id
     );
 
-    if (remainingblogPosts.length !== blogPostsArray.length) {
-      writeBlogPosts(remainingblogPosts);
+    if (deletedBlogPost) {
       response.status(204).send();
     } else {
       next(
