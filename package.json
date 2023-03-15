@@ -28,6 +28,7 @@
     "multer-storage": "^0.4.1",
     "multer-storage-cloudinary": "^4.0.0",
     "pdfmake": "^0.2.7",
+    "query-to-mongo": "^0.10.2",
     "swagger-ui-express": "^4.6.2",
     "uniqid": "^5.4.0",
     "yamljs": "^0.3.0"
