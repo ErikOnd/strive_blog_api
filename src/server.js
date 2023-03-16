@@ -12,7 +12,6 @@ import {
   notfoundHandler,
 } from "./errorsHandlers.js";
 import pdfDownloadRouter from "./api/files/pdfDownload.js";
-import commentsRouter from "./api/comments/index.js";
 import mongoose from "mongoose";
 
 const server = Express();
@@ -45,7 +44,6 @@ server.use(Express.json());
 
 server.use("/authors", authorsRouter);
 server.use("/blogPosts", blogPostsRouter);
-server.use("/comments", commentsRouter);
 server.use("/file", filesRouter);
 server.use("/blogPosts", pdfDownloadRouter);
 

@@ -25,8 +25,8 @@ blogPostsRouter.post(
 
 blogPostsRouter.get("/", async (request, response, next) => {
   try {
-    console.log(`${process.env.FE_PROD_URL}/blogPosts`);
     const mongoQuery = q2m(request.query);
+    console.log("mongoQuery:", mongoQuery);
     const blogPosts = await BlogPostModel.find(
       mongoQuery.criteria,
       mongoQuery.options.fields
