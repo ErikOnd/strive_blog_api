@@ -1,84 +1,62 @@
 import Express from "express";
-import uniqid from "uniqid";
-import { getAuthors, writeAuthors } from "../../lib/fs-tools.js";
 import { sendsRegistrationEmail } from "../../lib/email-tools.js";
+import AuthorsModel from "./authorsModel.js";
 
 const authorsRouter = Express.Router();
 
-authorsRouter.post("/", async (request, response, next) => {
+authorsRouter.post("/", async (req, res, next) => {
   try {
-    const newAuthor = {
-      ...request.body,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      id: uniqid(),
-    };
-    const authorsArray = await getAuthors();
+    const newAuthor = await AuthorsModel(req.body);
+    const authorList = await AuthorsModel.find();
 
-    const found = authorsArray.find(
-      (author) => author.email === request.body.email
-    );
+    const found = authorList.find((author) => author.email === req.body.email);
     if (found === undefined) {
-      authorsArray.push(newAuthor);
-      await writeAuthors(authorsArray);
-      response.status(201).send({ id: newAuthor.id });
+      const _id = await newAuthor.save();
+      res.status(201).send({ id: _id });
     } else {
-      response.status(400).send("User with that email already exists");
+      res.status(400).send("User with that email already exists");
     }
   } catch (error) {
     next(error);
   }
 });
 
-authorsRouter.get("/", async (request, response, next) => {
+authorsRouter.get("/", async (req, res, next) => {
   try {
-    const authorsArray = await getAuthors();
-    response.send(authorsArray);
+    const authorsArray = await AuthorsModel.find();
+    res.send(authorsArray);
   } catch (error) {
     next(error);
   }
 });
 
-authorsRouter.get("/:id", async (request, response, next) => {
+authorsRouter.get("/:id", async (req, res, next) => {
   try {
-    const authorsArray = await getAuthors();
-    const author = authorsArray.find(
-      (author) => author.id === request.params.id
-    );
-    response.send(author);
+    const author = await AuthorsModel.findById(req.params.id);
+    res.send(author);
   } catch (error) {
     next(error);
   }
 });
 
-authorsRouter.put("/:id", async (request, response, next) => {
+authorsRouter.put("/:id", async (req, res, next) => {
   try {
-    const authorsArray = await getAuthors();
-    const index = authorsArray.findIndex(
-      (author) => author.id === request.params.id
+    const updatedAuthor = await AuthorsModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
     );
-    const oldAuthor = authorsArray[index];
-    const updatedUser = {
-      ...oldAuthor,
-      ...request.body,
-      updatedAt: new Date(),
-    };
-    authorsArray[index] = updatedUser;
-    await writeAuthors(authorsArray);
-    response.send(updatedUser);
+
+    res.send(updatedAuthor);
   } catch (error) {
     next(error);
   }
 });
 
-authorsRouter.delete("/:id", async (request, response, next) => {
+authorsRouter.delete("/:id", async (req, res, next) => {
   try {
-    const authorsArray = await getAuthors();
-    const remainingAuthors = authorsArray.filter(
-      (author) => author.id !== request.params.id
-    );
-    await writeAuthors(remainingAuthors);
-    response.status(204).send();
+    await AuthorsModel.findByIdAndDelete(req.params.id);
+    res.status(204).send();
   } catch (error) {
     next(error);
   }

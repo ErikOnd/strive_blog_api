@@ -24,11 +24,14 @@ const blogPostSchema = new Schema(
       unit: { type: String },
     },
     author: {
+      authorID: { type: Schema.Types.ObjectId },
       name: { type: String },
       avatar: { type: String },
     },
     content: { type: String, required: true },
     comments: [commentSchema],
+
+    likes: [{ type: Schema.Types.ObjectId, require: true }],
   },
 
   {
