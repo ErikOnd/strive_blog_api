@@ -32,7 +32,10 @@ authorsRouter.get("/", async (req, res, next) => {
 
 authorsRouter.get("/:id", async (req, res, next) => {
   try {
-    const author = await AuthorsModel.findById(req.params.id);
+    const author = await AuthorsModel.findById(req.params.id).populate({
+      path: "blogPosts",
+      select: "title",
+    });
     res.send(author);
   } catch (error) {
     next(error);

@@ -266,22 +266,23 @@ blogPostsRouter.post("/:blogPostId/like", async (req, res, next) => {
     const blogPost = await BlogPostModel.findById(req.params.blogPostId);
 
     if (blogPost) {
-      const authorId = req.body.authorId;
-      const result = await BlogPostModel.findByIdAndUpdate(
-        req.params.blogPostId,
-        { $addToSet: { likes: authorId } },
-        { new: true, runValidators: true }
-      );
-
-      if (result.likes.length === blogPost.likes.length) {
+      const alreadyLiked = await BlogPostModel.findOne({
+        likes: req.body.authorId,
+      });
+      if (!alreadyLiked) {
         await BlogPostModel.findByIdAndUpdate(
           req.params.blogPostId,
-          { $pull: { likes: { $in: [authorId] } } },
+          { $push: { likes: req.body.authorId } },
+          { new: true, runValidators: true }
+        );
+        res.status(201).send({ like: "added" });
+      } else {
+        await BlogPostModel.findByIdAndUpdate(
+          req.params.blogPostId,
+          { $pull: { likes: req.body.authorId } },
           { new: true, runValidators: true }
         );
         res.status(200).send({ like: "removed" });
-      } else {
-        res.status(201).send({ like: "added" });
       }
     } else {
       res.status(404).send("Blog post not found");
