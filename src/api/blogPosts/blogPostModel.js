@@ -24,7 +24,7 @@ const blogPostSchema = new Schema(
       unit: { type: String },
     },
     author: {
-      authorID: { type: Schema.Types.ObjectId },
+      authorID: [{ type: Schema.Types.ObjectId, required: true }],
       name: { type: String },
       avatar: { type: String },
     },

@@ -4,6 +4,9 @@ import { checkBlogPostSchema, triggerBadRequest } from "./validation.js";
 import BlogPostModel from "./blogPostModel.js";
 import AuthorsModel from "../authors/authorsModel.js";
 import q2m from "query-to-mongo";
+import { basicAuthMiddleware } from "../../lib/auth/basic.js";
+import { adminOnlyMiddleware } from "../../lib/auth/admin.js";
+import { adminOrOwnerMiddleware } from "../../lib/auth/adminOrOwner.js";
 
 const blogPostsRouter = Express.Router();
 
@@ -11,6 +14,7 @@ blogPostsRouter.post(
   "/",
   checkBlogPostSchema,
   triggerBadRequest,
+  basicAuthMiddleware,
   async (request, response, next) => {
     try {
       const newBlogPost = new BlogPostModel(request.body);
@@ -32,138 +36,164 @@ blogPostsRouter.post(
   }
 );
 
-blogPostsRouter.get("/", async (request, response, next) => {
-  try {
-    const mongoQuery = q2m(request.query);
-    console.log("mongoQuery:", mongoQuery);
-    const blogPosts = await BlogPostModel.find(
-      mongoQuery.criteria,
-      mongoQuery.options.fields
-    )
-      .limit(mongoQuery.options.limit)
-      .skip(mongoQuery.options.skip)
-      .sort(mongoQuery.options.sort);
-    //  .populate({ path: "authors" });
-    const total = await BlogPostModel.countDocuments(mongoQuery.criteria);
-    response.send({
-      links: mongoQuery.links(`${process.env.FE_PROD_URL}/blogPosts`, total),
-      total,
-      numberOfPages: Math.ceil(total / mongoQuery.options.limit),
-      blogPosts,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-blogPostsRouter.get("/:id", async (request, response, next) => {
-  try {
-    const blogPost = await BlogPostModel.findById(request.params.id);
-    if (blogPost) {
-      response.send(blogPost);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `Blog post with id ${request.params.id} not found!`
-        )
-      );
+blogPostsRouter.get(
+  "/",
+  basicAuthMiddleware,
+  async (request, response, next) => {
+    try {
+      const mongoQuery = q2m(request.query);
+      const blogPosts = await BlogPostModel.find(
+        mongoQuery.criteria,
+        mongoQuery.options.fields
+      )
+        .limit(mongoQuery.options.limit)
+        .skip(mongoQuery.options.skip)
+        .sort(mongoQuery.options.sort);
+      //  .populate({ path: "authors" });
+      const total = await BlogPostModel.countDocuments(mongoQuery.criteria);
+      response.send({
+        links: mongoQuery.links(`${process.env.FE_PROD_URL}/blogPosts`, total),
+        total,
+        numberOfPages: Math.ceil(total / mongoQuery.options.limit),
+        blogPosts,
+      });
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-blogPostsRouter.put("/:id", async (request, response, next) => {
-  try {
-    const updatedBlogPost = await BlogPostModel.findByIdAndUpdate(
-      request.params.id,
-      request.body,
-      { new: true, runValidators: true }
-    );
-    console.log("updatedBlogPost", updatedBlogPost);
-
-    if (updatedBlogPost) {
-      response.send(updatedBlogPost);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `Blog post with id ${request.params.id} not found!`
-        )
-      );
+blogPostsRouter.get(
+  "/:id",
+  basicAuthMiddleware,
+  async (request, response, next) => {
+    try {
+      const blogPost = await BlogPostModel.findById(request.params.id);
+      if (blogPost) {
+        response.send(blogPost);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `Blog post with id ${request.params.id} not found!`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-blogPostsRouter.delete("/:id", async (request, response, next) => {
-  try {
-    const deletedBlogPost = await BlogPostModel.findByIdAndDelete(
-      request.params.id
-    );
-
-    if (deletedBlogPost) {
-      response.status(204).send();
-    } else {
-      next(
-        createHttpError(
-          404,
-          `Blog post with id ${request.params.id} not found!`
-        )
+blogPostsRouter.put(
+  "/:id",
+  basicAuthMiddleware,
+  adminOrOwnerMiddleware,
+  async (request, response, next) => {
+    try {
+      const updatedBlogPost = await BlogPostModel.findByIdAndUpdate(
+        request.params.id,
+        request.body,
+        { new: true, runValidators: true }
       );
+
+      if (updatedBlogPost) {
+        response.send(updatedBlogPost);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `Blog post with id ${request.params.id} not found!`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
+
+blogPostsRouter.delete(
+  "/:id",
+  basicAuthMiddleware,
+  adminOrOwnerMiddleware,
+  async (request, response, next) => {
+    try {
+      const deletedBlogPost = await BlogPostModel.findByIdAndDelete(
+        request.params.id
+      );
+
+      if (deletedBlogPost) {
+        response.status(204).send();
+      } else {
+        next(
+          createHttpError(
+            404,
+            `Blog post with id ${request.params.id} not found!`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default blogPostsRouter;
 
 //------------------------------------------------- EMBEDDED COMMENT -------------------------------------------------
 
-blogPostsRouter.post("/:blogPostId/comments", async (req, res, next) => {
-  try {
-    const updatedBlogPost = await BlogPostModel.findByIdAndUpdate(
-      req.params.blogPostId,
-      { $push: { comments: req.body } },
-      { new: true, runValidators: true }
-    );
-    console.log("updatedBlogPost:", updatedBlogPost);
-    console.log("req.body:", req.body);
-    if (updatedBlogPost) {
-      res.send(updatedBlogPost);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost with id ${req.params.blogPostId} not found!`
-        )
+blogPostsRouter.post(
+  "/:blogPostId/comments",
+  basicAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const updatedBlogPost = await BlogPostModel.findByIdAndUpdate(
+        req.params.blogPostId,
+        { $push: { comments: req.body } },
+        { new: true, runValidators: true }
       );
+      if (updatedBlogPost) {
+        res.send(updatedBlogPost);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost with id ${req.params.blogPostId} not found!`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-blogPostsRouter.get("/:blogPostId/comments/", async (req, res, next) => {
-  try {
-    const blogPost = await BlogPostModel.findById(req.params.blogPostId);
-    if (blogPost) {
-      res.send(blogPost.comments);
-    } else {
-      next(
-        createHttpError(404, `Comment with id ${req.body.commentId} not found!`)
-      );
+blogPostsRouter.get(
+  "/:blogPostId/comments/",
+  basicAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogPostModel.findById(req.params.blogPostId);
+      if (blogPost) {
+        res.send(blogPost.comments);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `Comment with id ${req.body.commentId} not found!`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 blogPostsRouter.get(
   "/:blogPostId/comments/:commentId",
+  basicAuthMiddleware,
   async (req, res, next) => {
     try {
       const blogPost = await BlogPostModel.findById(req.params.blogPostId);
@@ -198,6 +228,8 @@ blogPostsRouter.get(
 
 blogPostsRouter.put(
   "/:blogPostId/comments/:commentId",
+  basicAuthMiddleware,
+  adminOnlyMiddleware,
   async (req, res, next) => {
     try {
       const blogPost = await BlogPostModel.findById(req.params.blogPostId);
@@ -238,6 +270,8 @@ blogPostsRouter.put(
 
 blogPostsRouter.delete(
   "/:blogPostId/comments/:commentId",
+  basicAuthMiddleware,
+  adminOnlyMiddleware,
   async (req, res, next) => {
     try {
       const updatedBlogPost = await BlogPostModel.findByIdAndUpdate(
@@ -261,33 +295,57 @@ blogPostsRouter.delete(
   }
 );
 
-blogPostsRouter.post("/:blogPostId/like", async (req, res, next) => {
-  try {
-    const blogPost = await BlogPostModel.findById(req.params.blogPostId);
+blogPostsRouter.post(
+  "/:blogPostId/like",
+  basicAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogPostModel.findById(req.params.blogPostId);
 
-    if (blogPost) {
-      const alreadyLiked = await BlogPostModel.findOne({
-        likes: req.body.authorId,
-      });
-      if (!alreadyLiked) {
-        await BlogPostModel.findByIdAndUpdate(
-          req.params.blogPostId,
-          { $push: { likes: req.body.authorId } },
-          { new: true, runValidators: true }
-        );
-        res.status(201).send({ like: "added" });
+      if (blogPost) {
+        const alreadyLiked = await BlogPostModel.findOne({
+          likes: req.body.authorId,
+        });
+        if (!alreadyLiked) {
+          await BlogPostModel.findByIdAndUpdate(
+            req.params.blogPostId,
+            { $push: { likes: req.body.authorId } },
+            { new: true, runValidators: true }
+          );
+          res.status(201).send({ like: "added" });
+        } else {
+          await BlogPostModel.findByIdAndUpdate(
+            req.params.blogPostId,
+            { $pull: { likes: req.body.authorId } },
+            { new: true, runValidators: true }
+          );
+          res.status(200).send({ like: "removed" });
+        }
       } else {
-        await BlogPostModel.findByIdAndUpdate(
-          req.params.blogPostId,
-          { $pull: { likes: req.body.authorId } },
-          { new: true, runValidators: true }
-        );
-        res.status(200).send({ like: "removed" });
+        res.status(404).send("Blog post not found");
       }
-    } else {
-      res.status(404).send("Blog post not found");
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
+
+//----------------------------------------------------- stories ----------------------------------------
+
+blogPostsRouter.get(
+  "/me/stories",
+  basicAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const authorId = req.author._id;
+      const blogPosts = await BlogPostModel.find({
+        "author.authorID": { $in: [authorId] },
+      });
+      res.status(200).send(blogPosts);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+//----------------------------------------------------- stories end ----------------------------------------

@@ -9,6 +9,7 @@ import {
   genericErrorHandler,
   badRequestHandler,
   unauthorizedHandler,
+  forbiddenErrorHandler,
   notfoundHandler,
 } from "./errorsHandlers.js";
 import pdfDownloadRouter from "./api/files/pdfDownload.js";
@@ -49,6 +50,7 @@ server.use("/blogPosts", pdfDownloadRouter);
 
 server.use(badRequestHandler);
 server.use(unauthorizedHandler);
+server.use(forbiddenErrorHandler);
 server.use(notfoundHandler);
 server.use(genericErrorHandler);
 
