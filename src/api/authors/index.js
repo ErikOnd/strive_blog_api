@@ -1,8 +1,10 @@
 import Express from "express";
 import { sendsRegistrationEmail } from "../../lib/email-tools.js";
 import AuthorsModel from "./authorsModel.js";
-import { basicAuthMiddleware } from "../../lib/auth/basic.js";
+import { JWTAuthMiddleware } from "../../lib/auth/jwt.js";
 import { adminOnlyMiddleware } from "../../lib/auth/admin.js";
+import { createAccessToken } from "../../lib/auth/tools.js";
+import createHttpError from "http-errors";
 
 const authorsRouter = Express.Router();
 
@@ -14,7 +16,7 @@ authorsRouter.post("/", async (req, res, next) => {
     const found = authorList.find((author) => author.email === req.body.email);
     if (found === undefined) {
       const _id = await newAuthor.save();
-      res.status(201).send({ id: _id });
+      res.status(201).send({ id: _id }, " successfully logged in");
     } else {
       res.status(400).send("User with that email already exists");
     }
@@ -25,11 +27,11 @@ authorsRouter.post("/", async (req, res, next) => {
 
 authorsRouter.get(
   "/",
-  basicAuthMiddleware,
+  JWTAuthMiddleware,
   adminOnlyMiddleware,
   async (req, res, next) => {
     try {
-      const authorsArray = await AuthorsModel.find();
+      const authorsArray = await AuthorsModel.find({});
       res.send(authorsArray);
     } catch (error) {
       next(error);
@@ -37,15 +39,16 @@ authorsRouter.get(
   }
 );
 
-authorsRouter.get("/me", basicAuthMiddleware, async (req, res, next) => {
+authorsRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
-    res.send(req.author);
+    const author = await AuthorsModel.findById(req.user._id);
+    res.send(author);
   } catch (error) {
     next(error);
   }
 });
 
-authorsRouter.put("/me", basicAuthMiddleware, async (req, res, next) => {
+authorsRouter.put("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const updatedAuthor = await AuthorsModel.findByIdAndUpdate(
       req.author._id,
@@ -58,7 +61,7 @@ authorsRouter.put("/me", basicAuthMiddleware, async (req, res, next) => {
   }
 });
 
-authorsRouter.delete("/me", basicAuthMiddleware, async (req, res, next) => {
+authorsRouter.delete("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
     await AuthorsModel.findOneAndDelete(req.author._id);
     res.status(204).send();
@@ -67,7 +70,7 @@ authorsRouter.delete("/me", basicAuthMiddleware, async (req, res, next) => {
   }
 });
 
-authorsRouter.get("/:id", basicAuthMiddleware, async (req, res, next) => {
+authorsRouter.get("/:id", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const author = await AuthorsModel.findById(req.params.id).populate({
       path: "blogPosts",
@@ -81,7 +84,7 @@ authorsRouter.get("/:id", basicAuthMiddleware, async (req, res, next) => {
 
 authorsRouter.put(
   "/:id",
-  basicAuthMiddleware,
+  JWTAuthMiddleware,
   adminOnlyMiddleware,
   async (req, res, next) => {
     try {
@@ -100,7 +103,7 @@ authorsRouter.put(
 
 authorsRouter.delete(
   "/:id",
-  basicAuthMiddleware,
+  JWTAuthMiddleware,
   adminOnlyMiddleware,
   async (req, res, next) => {
     try {
@@ -112,12 +115,29 @@ authorsRouter.delete(
   }
 );
 
-authorsRouter.post("/sendMail", basicAuthMiddleware, async (req, res, next) => {
+authorsRouter.post("/sendMail", JWTAuthMiddleware, async (req, res, next) => {
   try {
     console.log("sendMail");
     const email = req.body.email;
     await sendsRegistrationEmail(email);
     res.send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+authorsRouter.post("/login", async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    console.log("email:", email, "password:", password);
+    const author = await AuthorsModel.checkCredentials(email, password);
+    if (author) {
+      const payload = { _id: author._id, role: author.role };
+      const accessToken = await createAccessToken(payload);
+      res.send({ accessToken });
+    } else {
+      next(createHttpError(401, "Credentials are not ok!"));
+    }
   } catch (error) {
     next(error);
   }
